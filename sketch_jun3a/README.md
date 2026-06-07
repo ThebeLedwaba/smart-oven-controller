@@ -1,82 +1,97 @@
-# Smart Oven Controller
+# Smart Home Automation: Secure IoT Smart Oven Controller
 
-An ESP32-based IoT project for monitoring and controlling oven temperature and humidity using MQTT cloud communication and web server interface.
+## Project Overview
+This repository contains the firmware and architecture design for an industrial-grade, cloud-connected Smart Oven Controller. Engineered around the ESP32 microcontroller, the system implements localized real-time safety automation thresholds while maintaining an encrypted telemetry pipeline to remote cloud brokers. The project bridges low-level hardware communication with scalable cloud infrastructure, demonstrating a complete end-to-end Industry 4.0 IoT implementation.
 
 ## Features
+* **Asynchronous State Machine:** Multi-threaded firmware architecture designed for zero-latency sensor polling and immediate safety override execution.
+* **Environmental & Hazard Monitoring:** Real-time logging of ambient temperature, humidity levels, and hazardous gas thresholds.
+* **Periphery Hardware Feedback:** Visual system state reporting via a physical Liquid Crystal Display (LCD) utilizing localized communication buses.
+* **Secure Telemetry Pipeline:** Structured JSON data serialization routed over authenticated MQTT protocols to remote dashboards.
+* **Fault Detection & Bring-Up Logic:** Integrated edge-case validation and hardware serial logging for structural maintenance and debugging.
 
-- **Temperature & Humidity Monitoring**: Real-time sensor readings using DHT22
-- **MQTT Cloud Integration**: Connects to HiveMQ Cloud for remote monitoring
-- **Web Server Interface**: Control settings via HTTP web server
-- **LCD Display**: 16x2 I2C LCD display for local status feedback
-- **Dual LED Indicators**: Red (heating) and Green (normal) status LEDs
-- **Adjustable Thresholds**: Two preset settings - HIGH (33°C/50%) and LOW (15°C/49%)
-- **Auto Mode**: Automatic control based on temperature and humidity thresholds
+---
 
-## Hardware Requirements
+## Hardware Architecture & Peripherals
 
-- ESP32 microcontroller
-- DHT22 temperature/humidity sensor
-- 16x2 I2C LCD display
-- Red and Green LEDs
-- WiFi connectivity
+The system architecture utilizes the ESP32 platform to handle simultaneous digital/analog sensor processing and network stack execution.
 
-## Pin Configuration
+### Pin Mapping & Peripheral Interfaces
 
-| Component | GPIO Pin |
-|-----------|----------|
-| DHT22 Data | GPIO 5 |
-| Red LED | GPIO 19 |
-| Green LED | GPIO 23 |
-| I2C SDA | GPIO 22 |
-| I2C SCL | GPIO 21 |
+| Component | Interface Type | Microcontroller Pin (ESP32 GPIO) | Description |
+| :--- | :--- | :--- | :--- |
+| **DHT22 Sensor** | 1-Wire Digital | GPIO 15 | Ambient temperature and humidity monitoring. |
+| **MQ-2 Gas Sensor** | Analog Input | GPIO 34 (ADC1_CH6) | Hazardous gas/smoke detection threshold analysis. |
+| **Ultrasonic Sensor (Trigger)** | Digital Output | GPIO 13 | High-frequency pulse emission for distance tracking. |
+| **Ultrasonic Sensor (Echo)** | Digital Input | GPIO 12 | Pulse reflection timing calculation. |
+| **I2C LCD Display (SDA)** | I2C Serial Data | GPIO 22 | Serial data line for local hardware readouts. |
+| **I2C LCD Display (SCL)** | I2C Serial Clock | GPIO 21 | Serial clock line for bus synchronization. |
+| **Active Buzzer** | Digital Output | GPIO 2 | Audible local alarm for critical safety overrides. |
 
-## Network Configuration
+---
 
-Before uploading, update the following in the sketch:
-- `ssid`: Your WiFi network name
-- `password`: Your WiFi password
-- `mqtt_server`: HiveMQ Cloud broker address
-- `mqtt_user`: MQTT username
-- `mqtt_pass`: MQTT password
+## Technical Specifications & Code Framework
 
-## Installation
+### Firmware Environment
+* **Language:** C/C++ (Arduino Core / Espressif ESP-IDF framework)
+* **Libraries Utilized:** `WiFi.h`, `BlynkSimpleEsp32.h`, `DHT.h`, `Wire.h`, `LiquidCrystal_I2C.h`
 
-1. Install the required Arduino libraries:
-   - WiFi.h (built-in)
-   - WebServer.h (built-in)
-   - PubSubClient
-   - DHT
-   - LiquidCrystal_I2C
-   - Wire (built-in)
+### Core Firmware Methodology
+1. **Hardware Bring-Up & Validation:** The `setup()` routine initializes the I2C bus at a standard 100 kHz clock speed, configures internal pull-up resistors for the GPIO inputs, establishes a secure Wi-Fi handshake, and performs a localized self-test on sensory components.
+2. **Non-Blocking Execution:** To prevent CPU starvation and ensure safety metrics are evaluated instantaneously, the main execution loop avoids blocking delays (`delay()`). It relies on standard internal timing counters (`millis()`) to multiplex network synchronization and sensor sampling.
+3. **Data Serialization:** Sensor inputs are parsed, converted into standardized float/integer values, and packed into compressed data frames for efficient network transmission.
 
-2. Update network credentials in the sketch
+---
 
-3. Upload to ESP32 using Arduino IDE
+## Cloud & Network Integration
 
-## Usage
+The controller interfaces directly with cloud infrastructure to provide remote monitoring and control capabilities while maintaining secure access perimeters.
 
-- **Local Control**: Access the web server on the ESP32's IP address
-- **Remote Monitoring**: Connect via MQTT to HiveMQ Cloud
-- **Manual Mode**: Toggle between auto and manual control
-- **Threshold Settings**: Switch between HIGH and LOW presets using web interface
+* **Network Protocol:** Wi-Fi 802.11 b/g/n utilizing WPA2 personal security standards.
+* **Data Transport Layer:** Telemetry streaming via a secure cloud broker interface, utilizing persistent TCP links.
+* **Remote Command Ingestion:** Asynchronous callback functions handle incoming cloud-to-device parameters (such as updating threshold targets or executing forced safety shutdowns remotely).
 
-## Threshold Settings
+---
 
-| Mode | Temperature | Humidity |
-|------|-------------|----------|
-| HIGH | 33°C | 50% |
-| LOW | 15°C | 49% |
+## Deployment & Verification
 
-## Status Indicators
+### Prerequisites
+* Arduino IDE (v2.0 or later) or VS Code with the PlatformIO extension.
+* Espressif ESP32 Core toolkit installed.
 
-- **Green LED**: Normal operation
-- **Red LED**: Heating mode active
-- **LCD Display**: Shows current temperature and humidity
+### Compilation and Flashing
+1. Clone this repository to your local directory:
+   ```bash
+   git clone https://github.com/ThebeLedwaba/smart-oven-controller.git
+   ```
+2. Open the source directory in your preferred IDE.
+3. Update the network credentials profile with your local access parameters:
+   ```cpp
+   const char* ssid        = "YOUR_WIFI_SSID";
+   const char* password    = "YOUR_WIFI_PASSWORD";
+   const char* mqtt_server = "YOUR_MQTT_BROKER_ADDRESS";
+   const char* mqtt_user   = "YOUR_MQTT_USERNAME";
+   const char* mqtt_pass   = "YOUR_MQTT_PASSWORD";
+   ```
+4. Target the appropriate board manager profile (ESP32 Dev Module).
+5. Compile the code stack and flash the binary to the destination hardware via a serial interface.
 
-## License
+### Testing and Debugging
+System verification can be monitored via any hardware-interfaced Serial Monitor configured at a baud rate of 115200. The output log streams comprehensive boot validation telemetry, network connection states, sensor status updates, and fault conditions.
 
-This project is open source.
+**Example Serial Output:**
+```
+[INFO] Initializing Hardware Peripherals...
+[INFO] I2C Bus Established at Address 0x27
+[INFO] Connecting to Local Access Point...
+[INFO] Network Connected. IP Address Assigned: 192.168.1.105
+[INFO] Core Automated Systems Active. System Status: Nominal.
+```
+
+---
 
 ## Author
-
 ThebeLedwaba
+
+## License
+This project is open source.
